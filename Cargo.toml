@@ -7,3 +7,7 @@ edition = "2021"
 
 [dependencies]
 termion = "1"
+
+[[example]]
+name = "two-sum"
+path = "examples/two-sum.rs"
