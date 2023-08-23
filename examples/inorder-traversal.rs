@@ -38,7 +38,7 @@ pub fn level_order1(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<i32>> {
     while !queue.is_empty() {
         let mut temp_arr = Vec::<i32>::new();
         let mut lens = queue.len();
-        while lens != 0  {
+        while lens != 0 {
             let current_node = queue.remove(0);
             temp_arr.push(current_node.borrow().val);
             if current_node.borrow().left.is_some() {
@@ -53,6 +53,5 @@ pub fn level_order1(root: Option<Rc<RefCell<TreeNode>>>) -> Vec<Vec<i32>> {
     }
     res
 }
-
 
 fn main() {}
