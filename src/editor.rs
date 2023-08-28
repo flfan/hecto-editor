@@ -24,7 +24,10 @@ struct StatusMessage {
 
 impl StatusMessage {
     fn from(message: String) -> Self {
-        Self { text: message, time: Instant::now() }
+        Self {
+            text: message,
+            time: Instant::now(),
+        }
     }
 }
 pub struct Editor {
@@ -33,7 +36,7 @@ pub struct Editor {
     cursor_position: Position,
     document: Document,
     offset: Position,
-    status_message: StatusMessage
+    status_message: StatusMessage,
 }
 
 impl Editor {
@@ -52,13 +55,13 @@ impl Editor {
     }
     pub fn default() -> Self {
         let args: Vec<String> = env::args().collect();
-        let mut initial_status = String::from("HELP: Ctrl-Q = quit");
+        let mut initial_status = String::from("HELP: Ctrl-S = save | Ctrl-Q = quit");
         let document = if args.len() > 1 {
             let filename = &args[1];
             let doc = Document::open(filename);
             if doc.is_ok() {
                 doc.unwrap()
-            }else {
+            } else {
                 initial_status = format!("ERR: Could not open file: {}", filename);
                 Document::default()
             }
@@ -71,7 +74,7 @@ impl Editor {
             cursor_position: Position::default(),
             document,
             offset: Position::default(),
-            status_message: StatusMessage::from(initial_status)
+            status_message: StatusMessage::from(initial_status),
         }
     }
 
@@ -94,10 +97,36 @@ impl Editor {
         Terminal::flush()
     }
 
+    fn save(&mut self) {
+        if self.document.file_name.is_none() {
+            let new_name = self.prompt("Save as: ").unwrap_or(None);
+            if new_name.is_none() {
+                self.status_message = StatusMessage::from("Save aborted.".to_string());
+                return;
+            }
+            self.document.file_name = new_name;
+        }
+        if self.document.save().is_ok() {
+            self.status_message = StatusMessage::from("File saved successfully.".to_string());
+        } else {
+            self.status_message = StatusMessage::from("Error writing file!".to_string());
+        }
+    }
+
     fn process_keypress(&mut self) -> Result<(), std::io::Error> {
         let pressed_key = Terminal::read_key()?;
         match pressed_key {
             Key::Ctrl('q') => self.should_quit = true,
+            Key::Ctrl('s') => self.save(),
+            Key::Char(c) => {
+                self.document.insert(&self.cursor_position, c);
+                self.move_cursor(Key::Right);
+            }
+            Key::Delete => self.document.delete(&self.cursor_position),
+            Key::Backspace => {
+                self.move_cursor(Key::Left);
+                self.document.delete(&self.cursor_position);
+            }
             Key::Up
             | Key::Down
             | Key::Left
@@ -230,12 +259,22 @@ impl Editor {
     fn draw_status_bar(&self) {
         let mut status;
         let width = self.terminal.size().width as usize;
+        let modified_indicator = if self.document.is_dirty() {
+            " (modified)"
+        } else {
+            ""
+        };
         let mut file_name = "[No Name]".to_string();
         if let Some(name) = &self.document.file_name {
             file_name = name.clone();
             file_name.truncate(20);
         }
-        status = format!("{} - {} lines", file_name, self.document.len());
+        status = format!(
+            "{} - {} lines{}",
+            file_name,
+            self.document.len(),
+            modified_indicator
+        );
         let line_indicator = format!(
             "{}/{}",
             self.cursor_position.y.saturating_add(1),
@@ -263,6 +302,37 @@ impl Editor {
             text.truncate(self.terminal.size().width as usize);
             print!("{}", text);
         }
+    }
+
+    fn prompt(&mut self, prompt: &str) -> Result<Option<String>, std::io::Error> {
+        let mut result = String::new();
+        loop {
+            self.status_message = StatusMessage::from(format!("{}{}", prompt, result));
+            self.refresh_screen()?;
+            match Terminal::read_key()? {
+                Key::Backspace => {
+                    if !result.is_empty() {
+                        result.truncate(result.len() - 1);
+                    }
+                }
+                Key::Char('\n') => break,
+                Key::Char(c) => {
+                    if !c.is_control() {
+                        result.push(c);
+                    }
+                }
+                Key::Esc => {
+                    result.truncate(0);
+                    break;
+                }
+                _ => (),
+            }
+        }
+        self.status_message = StatusMessage::from(String::new());
+        if result.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(result))
     }
 }
 
