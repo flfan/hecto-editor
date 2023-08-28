@@ -77,7 +77,7 @@ impl Editor {
             document,
             offset: Position::default(),
             status_message: StatusMessage::from(initial_status),
-            quit_times: QUIT_TIMES
+            quit_times: QUIT_TIMES,
         }
     }
 
@@ -129,7 +129,7 @@ impl Editor {
                     return Ok(());
                 }
                 self.should_quit = true
-            },
+            }
             Key::Ctrl('s') => self.save(),
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
