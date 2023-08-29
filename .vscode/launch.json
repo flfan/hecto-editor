@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Debug executable 'hecto'",
             "program": "${workspaceRoot}/target/debug/hecto",
-            "args": ["src/editor.rs"],
+            "args": ["./test.txt"],
             "cwd": "${workspaceFolder}"
         },
     ]
