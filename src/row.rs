@@ -77,8 +77,8 @@ impl Row {
         let mut length = 0;
         for (index, grapheme) in self.string[..].graphemes(true).enumerate() {
             if index != at {
-            length += 1;
-            result.push_str(grapheme);
+                length += 1;
+                result.push_str(grapheme);
             }
         }
         self.len = length;
@@ -109,10 +109,26 @@ impl Row {
         self.len = length;
         self.string = row;
 
-        Self { string: splitted_row, len: splitted_length }
+        Self {
+            string: splitted_row,
+            len: splitted_length,
+        }
     }
 
     pub fn as_bytes(&self) -> &[u8] {
         self.string.as_bytes()
+    }
+    pub fn find(&self, query: &str) -> Option<usize> {
+        let match_byte_index = self.string.find(query);
+        if let Some(match_byte_index) = match_byte_index {
+            for (grapheme_index, (byte_index, _)) in
+                self.string[..].grapheme_indices(true).enumerate()
+            {
+                if match_byte_index == byte_index {
+                    return Some(grapheme_index);
+                }
+            }
+        }
+        None
     }
 }
