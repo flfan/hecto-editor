@@ -1,4 +1,4 @@
-use crate::{highlighting, SearchDirection};
+use crate::{highlighting, HighlightingOptions, SearchDirection};
 use std::cmp;
 use termion::color;
 use unicode_segmentation::UnicodeSegmentation;
@@ -177,7 +177,7 @@ impl Row {
         None
     }
 
-    pub fn highlight(&mut self, word: Option<&str>) {
+    pub fn highlight(&mut self, opts: HighlightingOptions, word: Option<&str>) {
         let mut highlighting = Vec::new();
         let chars: Vec<char> = self.string.chars().collect();
         let mut matches = Vec::new();
@@ -195,6 +195,7 @@ impl Row {
         }
 
         let mut prev_is_separator = true;
+        let mut in_string = false;
         let mut index = 0;
         while let Some(c) = chars.get(index) {
             if let Some(word) = word {
@@ -214,12 +215,39 @@ impl Row {
             } else {
                 &highlighting::Type::None
             };
-
-            if (c.is_ascii_digit()
-                && (prev_is_separator || previous_highlight == &highlighting::Type::Number))
-                || (c == &'.' && previous_highlight == &highlighting::Type::Number)
-            {
-                highlighting.push(highlighting::Type::Number);
+            if opts.strings() {
+                if in_string {
+                    highlighting.push(highlighting::Type::String);
+                    if *c == '\\' && index < self.len().saturating_sub(1) {
+                        highlighting.push(highlighting::Type::String);
+                        index += 2;
+                        continue;
+                    }
+                    if *c == '"' {
+                        in_string = false;
+                        prev_is_separator = true;
+                    } else {
+                        prev_is_separator = false;
+                    }
+                    index += 1;
+                    continue;
+                } else if prev_is_separator && *c == '"' {
+                    highlighting.push(highlighting::Type::String);
+                    in_string = true;
+                    prev_is_separator = true;
+                    index += 1;
+                    continue;
+                }
+            }
+            if opts.numbers() {
+                if (c.is_ascii_digit()
+                    && (prev_is_separator || *previous_highlight == highlighting::Type::Number))
+                    || (*c == '.' && *previous_highlight == highlighting::Type::Number)
+                {
+                    highlighting.push(highlighting::Type::Number);
+                } else {
+                    highlighting.push(highlighting::Type::None);
+                }
             } else {
                 highlighting.push(highlighting::Type::None);
             }
