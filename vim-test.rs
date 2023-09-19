@@ -1,4 +1,4 @@
-56 java d56be crate::Document;
+// 56 java d56be crate::Document;
 use crate::Row;
 use crate::Terminal;
 use std::env;
@@ -7,7 +7,7 @@ use std::time::Instant;
 use termion::color;
 use termion::event::Key;
 
-123.456,345
+// 123.456,345
 
 const STATUS_FG_COLOR: color::Rgb = color::Rgb(63, 63, 63);
 const STATUS_BAR_COLOR: color::Rgb = color::Rgb(239, 239, 239);
