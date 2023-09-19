@@ -20,10 +20,10 @@ pub struct Position {
     pub y: usize,
 }
 
-struct StatusMessage {
+/* struct StatusMessage {
     text: String,
     time: Instant,
-}
+} */
 
 impl StatusMessage {
     fn from(message: String) -> Self {
